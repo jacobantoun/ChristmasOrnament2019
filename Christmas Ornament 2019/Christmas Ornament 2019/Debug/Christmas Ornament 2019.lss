@@ -1,0 +1,242 @@
+
+Christmas Ornament 2019.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         000000b0  00000000  00000000  00000054  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data         00000000  00800060  00800060  00000104  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  2 .comment      00000030  00000000  00000000  00000104  2**0
+                  CONTENTS, READONLY
+  3 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  00000134  2**2
+                  CONTENTS, READONLY
+  4 .debug_aranges 00000040  00000000  00000000  00000170  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  5 .debug_info   000004fd  00000000  00000000  000001b0  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_abbrev 00000400  00000000  00000000  000006ad  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_line   000002a0  00000000  00000000  00000aad  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_frame  00000070  00000000  00000000  00000d50  2**2
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_str    000002f0  00000000  00000000  00000dc0  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_loc    00000162  00000000  00000000  000010b0  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .debug_ranges 00000048  00000000  00000000  00001212  2**0
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	09 c0       	rjmp	.+18     	; 0x14 <__ctors_end>
+   2:	0e c0       	rjmp	.+28     	; 0x20 <__bad_interrupt>
+   4:	0d c0       	rjmp	.+26     	; 0x20 <__bad_interrupt>
+   6:	0c c0       	rjmp	.+24     	; 0x20 <__bad_interrupt>
+   8:	0b c0       	rjmp	.+22     	; 0x20 <__bad_interrupt>
+   a:	0a c0       	rjmp	.+20     	; 0x20 <__bad_interrupt>
+   c:	09 c0       	rjmp	.+18     	; 0x20 <__bad_interrupt>
+   e:	08 c0       	rjmp	.+16     	; 0x20 <__bad_interrupt>
+  10:	07 c0       	rjmp	.+14     	; 0x20 <__bad_interrupt>
+  12:	06 c0       	rjmp	.+12     	; 0x20 <__bad_interrupt>
+
+00000014 <__ctors_end>:
+  14:	11 24       	eor	r1, r1
+  16:	1f be       	out	0x3f, r1	; 63
+  18:	cf e9       	ldi	r28, 0x9F	; 159
+  1a:	cd bf       	out	0x3d, r28	; 61
+  1c:	19 d0       	rcall	.+50     	; 0x50 <main>
+  1e:	46 c0       	rjmp	.+140    	; 0xac <_exit>
+
+00000020 <__bad_interrupt>:
+  20:	ef cf       	rjmp	.-34     	; 0x0 <__vectors>
+
+00000022 <HC595Pulse>:
+}
+void HC595Pulse()
+{
+	//Pulse the Shift Clock
+
+	HC595_PORT|=(1<<HC595_SH_CP_POS);//HIGH
+  22:	c1 9a       	sbi	0x18, 1	; 24
+
+	HC595_PORT&=(~(1<<HC595_SH_CP_POS));//LOW
+  24:	c1 98       	cbi	0x18, 1	; 24
+  26:	08 95       	ret
+
+00000028 <HC595Latch>:
+//Sends a clock pulse on ST_CP line
+void HC595Latch()
+{
+	//Pulse the Store Clock
+
+	HC595_PORT|=(1<<HC595_ST_CP_POS);//HIGH
+  28:	c2 9a       	sbi	0x18, 2	; 24
+	//_delay_loop_1(1);
+
+	HC595_PORT&=(~(1<<HC595_ST_CP_POS));//LOW
+  2a:	c2 98       	cbi	0x18, 2	; 24
+  2c:	08 95       	ret
+
+0000002e <HC595Write>:
+	//_delay_loop_1(1);
+}
+void HC595Write(uint8_t data)
+{
+  2e:	cf 93       	push	r28
+  30:	df 93       	push	r29
+  32:	d8 2f       	mov	r29, r24
+  34:	c8 e0       	ldi	r28, 0x08	; 8
+	//Order is MSB first
+	for(uint8_t i=0;i<8;i++)
+	{
+		//Output the data on DS line according to the
+		//Value of MSB
+		if(data & 0b10000000)
+  36:	dd 23       	and	r29, r29
+  38:	14 f4       	brge	.+4      	; 0x3e <__SP_L__+0x1>
+		{
+			//MSB is 1 so output high
+
+			HC595DataHigh();
+  3a:	c3 9a       	sbi	0x18, 3	; 24
+  3c:	01 c0       	rjmp	.+2      	; 0x40 <__SREG__+0x1>
+		}
+		else
+		{
+			//MSB is 0 so output high
+			HC595DataLow();
+  3e:	c3 98       	cbi	0x18, 3	; 24
+		}
+
+		HC595Pulse();  //Pulse the Clock line
+  40:	f0 df       	rcall	.-32     	; 0x22 <HC595Pulse>
+		data=data<<1;  //Now bring next bit at MSB position
+  42:	dd 0f       	add	r29, r29
+  44:	c1 50       	subi	r28, 0x01	; 1
+void HC595Write(uint8_t data)
+{
+	//Send each 8 bits serially
+
+	//Order is MSB first
+	for(uint8_t i=0;i<8;i++)
+  46:	b9 f7       	brne	.-18     	; 0x36 <HC595Write+0x8>
+
+	}
+
+	//Now all 8 bits have been transferred to shift register
+	//Move them to output latch at one
+	HC595Latch();
+  48:	ef df       	rcall	.-34     	; 0x28 <HC595Latch>
+  4a:	df 91       	pop	r29
+  4c:	cf 91       	pop	r28
+  4e:	08 95       	ret
+
+00000050 <main>:
+
+
+int main(void)
+{
+	
+	DDRB |= (1 << PORTB1) | (1 << PORTB2) | (1 << PORTB3); // Shift register pins as output
+  50:	87 b3       	in	r24, 0x17	; 23
+  52:	8e 60       	ori	r24, 0x0E	; 14
+  54:	87 bb       	out	0x17, r24	; 23
+	PORTB = 0; // Start with everything off
+  56:	18 ba       	out	0x18, r1	; 24
+	DDRB |= 1 << PINB4;
+  58:	bc 9a       	sbi	0x17, 4	; 23
+	char lightson = 0;
+	
+	HC595Write(0);
+  5a:	80 e0       	ldi	r24, 0x00	; 0
+  5c:	e8 df       	rcall	.-48     	; 0x2e <HC595Write>
+    while (1) 
+    {
+		for(int x = 0; x <= 8; x++)
+		{
+			_delay_ms(500);
+			num = (1 << x);
+  5e:	01 e0       	ldi	r16, 0x01	; 1
+  60:	11 e0       	ldi	r17, 0x01	; 1
+	#else
+		//round up by default
+		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+	#endif
+
+	__builtin_avr_delay_cycles(__ticks_dc);
+  62:	2f eb       	ldi	r18, 0xBF	; 191
+  64:	84 ed       	ldi	r24, 0xD4	; 212
+  66:	91 e0       	ldi	r25, 0x01	; 1
+  68:	21 50       	subi	r18, 0x01	; 1
+  6a:	80 40       	sbci	r24, 0x00	; 0
+  6c:	90 40       	sbci	r25, 0x00	; 0
+  6e:	e1 f7       	brne	.-8      	; 0x68 <main+0x18>
+  70:	00 c0       	rjmp	.+0      	; 0x72 <main+0x22>
+  72:	00 00       	nop
+	
+	uint16_t leds = 0b0000000000000000;
+	
+    while (1) 
+    {
+		for(int x = 0; x <= 8; x++)
+  74:	c0 e0       	ldi	r28, 0x00	; 0
+  76:	d0 e0       	ldi	r29, 0x00	; 0
+		{
+			_delay_ms(500);
+			num = (1 << x);
+  78:	80 2f       	mov	r24, r16
+			if(x != 8)
+			{
+				HC595Write(num);
+  7a:	d9 df       	rcall	.-78     	; 0x2e <HC595Write>
+				PORTB &= ~(1 << PORTB4);
+  7c:	c4 98       	cbi	0x18, 4	; 24
+	
+	uint16_t leds = 0b0000000000000000;
+	
+    while (1) 
+    {
+		for(int x = 0; x <= 8; x++)
+  7e:	21 96       	adiw	r28, 0x01	; 1
+  80:	2f eb       	ldi	r18, 0xBF	; 191
+  82:	84 ed       	ldi	r24, 0xD4	; 212
+  84:	91 e0       	ldi	r25, 0x01	; 1
+  86:	21 50       	subi	r18, 0x01	; 1
+  88:	80 40       	sbci	r24, 0x00	; 0
+  8a:	90 40       	sbci	r25, 0x00	; 0
+  8c:	e1 f7       	brne	.-8      	; 0x86 <main+0x36>
+  8e:	00 c0       	rjmp	.+0      	; 0x90 <main+0x40>
+  90:	00 00       	nop
+		{
+			_delay_ms(500);
+			num = (1 << x);
+  92:	81 2f       	mov	r24, r17
+  94:	0c 2e       	mov	r0, r28
+  96:	01 c0       	rjmp	.+2      	; 0x9a <main+0x4a>
+  98:	88 0f       	add	r24, r24
+  9a:	0a 94       	dec	r0
+  9c:	ea f7       	brpl	.-6      	; 0x98 <main+0x48>
+			if(x != 8)
+  9e:	c8 30       	cpi	r28, 0x08	; 8
+  a0:	d1 05       	cpc	r29, r1
+  a2:	59 f7       	brne	.-42     	; 0x7a <main+0x2a>
+				HC595Write(num);
+				PORTB &= ~(1 << PORTB4);
+			}
+			else
+			{
+				HC595Write(0);
+  a4:	80 e0       	ldi	r24, 0x00	; 0
+  a6:	c3 df       	rcall	.-122    	; 0x2e <HC595Write>
+				PORTB |= (1 << PORTB4);
+  a8:	c4 9a       	sbi	0x18, 4	; 24
+  aa:	db cf       	rjmp	.-74     	; 0x62 <main+0x12>
+
+000000ac <_exit>:
+  ac:	f8 94       	cli
+
+000000ae <__stop_program>:
+  ae:	ff cf       	rjmp	.-2      	; 0xae <__stop_program>
